@@ -1,0 +1,30 @@
+{
+  "python": "3.13.9 (v3.13.9:8183fa5e3f7, Oct 14 2025, 10:27:13) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+  "packages": {
+    "numpy": "2.5.2",
+    "pandas": "3.0.5",
+    "networkx": "3.6.1",
+    "scipy": "1.18.0",
+    "pydantic": "2.13.4",
+    "typer": "0.27.1",
+    "PyYAML": "6.0.3"
+  },
+  "artifacts": {
+    "benchmark_main.csv": "9726c943f6e4e74845ef8a6bf79f40a54bdd353f2d9069497b61feeac2bcfdf4",
+    "trajectories_main.csv": "fa4851641d730e86c635a6009700ef4e347690eb32565d414264b5a3f0ec9e2f",
+    "table_repair_vs_fallback_ablation.csv": "4ec46cb03773d14d221c0b4403c1c912dca5a393c5e5b129f26d6cd7d2ba9cbe",
+    "benchmark_severity_uncertainty.csv": "a7409ecf774487e68aae0f5295d24dd57ac42e626d8a3314bf93af0deaac0833",
+    "table_benchmark_aggregate.csv": "7f266d579529076c3d547cf39f75790f1c33ba5d09497e1831d876f33eed5e4e",
+    "table_assurance_performance_frontier.csv": "9e693c5a20330c6f493d0cc5a5194bf96af883a5dc2dd0759464a1a2e523e20e",
+    "fig_assurance_performance_frontier.png": "3a1f464f8029561f72c526e509964602504117e66e3bf39bcc8789c608c6c381",
+    "fig_resilience_loss.png": "72bc892a65d37504756da80a9d114ebdeaee2f8bc8d415c857c9e1939f47abb7",
+    "fig_trajectory_compound.png": "5d692d02e996f3cfbeb5f18e7e3794badd61029b3de88206a52e118660ef1021",
+    "fig_trajectory_cyber_physical.png": "3c8768cfec58363b29344e2630bba2ce65b10ac2a385925414a1f53aeb3b0af7",
+    "paired_sc_cais_vs_none.csv": "03c0e1a47f0344d08f125eb625f7dac448c523fa0279f0f0c094902a3e5ecd10",
+    "inference_sc_cais_vs_none.csv": "63d1683a66bb32388f835aa08b8cddca12a14476cd58fd6057dc997e11dde70e",
+    "paired_repair_vs_fallback.csv": "4fb9881850d11cfc722f8c656646211b2bdd1ad95c6850cdf92385de832d7f96",
+    "inference_repair_vs_fallback.csv": "edb98a5626f63c6360ba3a3bf8640a7457f816316cdf8d2baf36b8b2636e5854",
+    "fig_severity_uncertainty_heatmap.png": "68e421735a3e10fc2a14e845714e1e58c49193bbfcf8c391c0ea2030ea3f7d19"
+  }
+}

@@ -1,0 +1,23 @@
+horizon: 24
+seeds: [0, 1, 2, 3, 4]
+agents:
+  - rule_based
+  - cost_aware_optimizer
+  - rolling_horizon_milp
+  - agentic_heuristic
+  - stochastic
+assurance:
+  - none
+  - reject_only
+  - sc_cais
+scenarios:
+  - normal
+  - supplier_failure
+  - hub_closure
+  - demand_surge
+  - transport_delay
+  - false_inventory
+  - telemetry_loss
+  - route_spoofing
+  - compound
+  - cyber_physical

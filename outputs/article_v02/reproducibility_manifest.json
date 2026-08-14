@@ -1,0 +1,22 @@
+{
+  "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+  "packages": {
+    "numpy": "2.3.5",
+    "pandas": "2.2.3",
+    "networkx": "3.6.1",
+    "scipy": "1.17.0",
+    "pydantic": "2.13.4",
+    "typer": "0.26.3",
+    "PyYAML": "6.0.3"
+  },
+  "artifacts": {
+    "benchmark_main.csv": "ad22fee5c72b350c10a1982b690a58f7497e146458f2a0f62384fc073db844b9",
+    "benchmark_severity_uncertainty.csv": "def1e1c2109fe5f07e634b19aa1def6069d76d5928f36ebbd0b52418d5d554b3",
+    "table_benchmark_aggregate.csv": "5cfaa9844058997e137fa44fe750e60b325b81f61e0977c9a39497b49d729af6",
+    "table_assurance_performance_frontier.csv": "4c489939f1458cf7cb00c75b0744653afcc63b45d98fdde740b059c4af6380cb",
+    "fig_assurance_performance_frontier.png": "31a4faece0528d457e35df1131fd63278f504da3474acc39e1593fc1d08c81d9",
+    "fig_resilience_loss.png": "7cc843948aae429e38a6a576ca38dc0bf743853830103afe66c7c0730ebb5f76",
+    "fig_severity_uncertainty_heatmap.png": "906928b1fa0ebaac5eb1fee56bb649476d70f03bff9e830e754e8ded5081c461"
+  }
+}

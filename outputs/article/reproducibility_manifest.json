@@ -1,0 +1,18 @@
+{
+  "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+  "packages": {
+    "numpy": "2.3.5",
+    "pandas": "2.2.3",
+    "networkx": "3.6.1",
+    "pydantic": "2.13.4",
+    "typer": "0.26.3",
+    "PyYAML": "6.0.3"
+  },
+  "artifacts": {
+    "benchmark_summary.csv": "e5970ecfbb78f33f7e30a38fb9fda4a68f5738120053f432e89f9a0cbdca03e7",
+    "table_benchmark_aggregate.csv": "5c70d79cb528f9647266accd2f344f4c069c1ed58d7c11a6c00f29ff4df6467e",
+    "table_assurance_performance_frontier.csv": "bd735b44d6fab40140f4e53adcd9f26556546bb52e1e1a4c45443232c1a4ccb1",
+    "fig_assurance_performance_frontier.png": "b9ec41f0cb551f9ec3ce0876b01b4808c65cbaacb69236e9e246427717efc164"
+  }
+}
