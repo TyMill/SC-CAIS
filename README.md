@@ -1,3 +1,6 @@
+[![DOI](https://zenodo.org/badge/1334411735.svg)](https://doi.org/10.5281/zenodo.21937793)
+
+
 # SC-CAIS
 
 **Controlled Agentic AI for Resilient Supply Chains** — a research-oriented Python library for runtime-assured autonomous supply-chain reconfiguration under operational and cyber-physical disruptions.
