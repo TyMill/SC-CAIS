@@ -14,7 +14,7 @@ from typing import Literal
 import pandas as pd
 
 from sc_cais.agents import AgenticHeuristicAgent, RollingHorizonMILPAgent, RuleBasedAgent
-from sc_cais.assurance import RuntimeAssurance
+from sc_cais.assurance import PassthroughAssurance, RuntimeAssurance
 from sc_cais.constraints import (
     AuthorityConstraint,
     CapacityConstraint,
@@ -34,6 +34,7 @@ from sc_cais.visibility import from_observation
 KernelView = Literal["oracle", "observed"]
 RepairMode = Literal[
     "rule_repair",
+    "monitor_only",
     "reject_only",
     "quantity_clip",
     "no_trust",
@@ -102,7 +103,9 @@ class EvidenceLimitedAssurance:
         # The restricted kernel is passed only a reconstructed state made from
         # the snapshot. It cannot reach env.network or the true shipment ledger.
         state = env if self.view == "oracle" else from_observation(env.observe())
-        if self.repair_mode == "quantity_clip":
+        if self.repair_mode == "monitor_only":
+            decision = PassthroughAssurance(self._kernel.constraints).decide(state, proposed)
+        elif self.repair_mode == "quantity_clip":
             from sc_cais.models import AssuranceDecision
 
             original = self._kernel._violations(state, proposed)
@@ -224,6 +227,7 @@ def run_campaign(
     output_dir: str | Path | None = None,
     include_ablations: bool = False,
     action_order: Literal["native", "reverse"] = "native",
+    modes_override: tuple[tuple[KernelView, RepairMode], ...] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     policies = (RuleBasedAgent, RollingHorizonMILPAgent, AgenticHeuristicAgent)
     modes: tuple[tuple[KernelView, RepairMode], ...] = (
@@ -239,6 +243,10 @@ def run_campaign(
             ("observed", "no_route_repair"),
             ("observed", "no_quantity_clipping"),
         )
+    if modes_override is not None:
+        if not modes_override:
+            raise ValueError("modes_override must include at least one assurance mode")
+        modes = modes_override
     summaries: list[dict[str, object]] = []
     actions: list[dict[str, object]] = []
     for scenario in scenarios if scenarios is not None else revision_scenarios():
