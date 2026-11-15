@@ -138,6 +138,7 @@ class StepResult:
     step_cost: float
     cumulative_cost: float
     data_quality: float
+    current_demand_fulfilled: float = 0.0
 
     @property
     def proposed_action(self) -> Action:
