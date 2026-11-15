@@ -33,8 +33,13 @@ from sc_cais.visibility import from_observation
 
 KernelView = Literal["oracle", "observed"]
 RepairMode = Literal[
-    "rule_repair", "reject_only", "quantity_clip", "no_trust",
-    "no_authority", "no_route_repair", "no_quantity_clipping",
+    "rule_repair",
+    "reject_only",
+    "quantity_clip",
+    "no_trust",
+    "no_authority",
+    "no_route_repair",
+    "no_quantity_clipping",
 ]
 
 # This independent evaluator has privileged state access *only for evaluation*.
@@ -125,7 +130,9 @@ class EvidenceLimitedAssurance:
 
                 original = self._kernel._violations(state, proposed)
                 if not original:
-                    decision = AssuranceOutcome(proposed, proposed, AssuranceDecision.APPROVE, [], [])
+                    decision = AssuranceOutcome(
+                        proposed, proposed, AssuranceDecision.APPROVE, [], []
+                    )
                 else:
                     candidate = self._kernel._repair(state, proposed)
                     if candidate is not None:
@@ -144,8 +151,11 @@ class EvidenceLimitedAssurance:
                         )
                     else:
                         decision = AssuranceOutcome(
-                            proposed, Action.hold("component ablation fallback"),
-                            AssuranceDecision.FALLBACK, original, []
+                            proposed,
+                            Action.hold("component ablation fallback"),
+                            AssuranceDecision.FALLBACK,
+                            original,
+                            [],
                         )
             else:
                 decision = self._kernel.decide(state, proposed)

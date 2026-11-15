@@ -239,8 +239,12 @@ class SupplyChainEnv:
             service_level=self.service_level,
             instant_service_level=min(
                 1.0,
-                (self._current_demand_fulfilled if self.service_accounting == "fifo_on_time"
-                 else fulfilled) / max(demand, 1e-12),
+                (
+                    self._current_demand_fulfilled
+                    if self.service_accounting == "fifo_on_time"
+                    else fulfilled
+                )
+                / max(demand, 1e-12),
             ),
             current_demand_fulfilled=self._current_demand_fulfilled,
             total_backlog=sum(n.backlog for n in self.network.nodes()),

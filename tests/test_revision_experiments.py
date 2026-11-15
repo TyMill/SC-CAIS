@@ -95,9 +95,7 @@ def test_on_time_service_distinguishes_backlog_clearance() -> None:
 
 def test_component_ablations_and_action_order_campaign() -> None:
     scenario = Scenario("normal", (), "baseline", "none")
-    normal, _ = run_campaign(
-        seeds=(0,), horizon=3, scenarios=[scenario], include_ablations=True
-    )
+    normal, _ = run_campaign(seeds=(0,), horizon=3, scenarios=[scenario], include_ablations=True)
     reversed_plan, _ = run_campaign(
         seeds=(0,), horizon=3, scenarios=[scenario], action_order="reverse"
     )
