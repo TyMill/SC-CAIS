@@ -26,6 +26,7 @@ def results_frame(results: list[StepResult]) -> pd.DataFrame:
                 "fallbacks": decisions[AssuranceDecision.FALLBACK],
                 "demand": r.demand,
                 "fulfilled": r.fulfilled,
+                "current_demand_fulfilled": r.current_demand_fulfilled,
                 "service_level": r.service_level,
                 "instant_service_level": r.instant_service_level,
                 "backlog": r.total_backlog,
