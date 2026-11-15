@@ -17,8 +17,8 @@ from sc_cais.agents import AgenticHeuristicAgent, RollingHorizonMILPAgent, RuleB
 from sc_cais.assurance import RuntimeAssurance
 from sc_cais.constraints import (
     AuthorityConstraint,
-    DataTrustConstraint,
     CapacityConstraint,
+    DataTrustConstraint,
     InventoryConstraint,
     RouteAvailabilityConstraint,
     ValidActionConstraint,
