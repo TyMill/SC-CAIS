@@ -74,8 +74,10 @@ class RuntimeAssurance:
         source_id = action.source
         target_id = action.target
         observation = env.observe()
-        trust_threshold = 0.5
-        authority_limit = 45.0
+        # A disabled component must also disappear from the repair rules.
+        # Otherwise ablation would still enforce its threshold indirectly.
+        trust_threshold = float("-inf")
+        authority_limit = float("inf")
         for constraint in self.constraints:
             if getattr(constraint, "name", "") == "data_trust":
                 trust_threshold = float(getattr(constraint, "threshold", trust_threshold))
