@@ -77,3 +77,34 @@ def test_covert_high_trust_attack_exposes_observed_kernel_limit() -> None:
     result_oracle = oracle.decide(env, proposal)
     assert result_oracle.executed_action.quantity <= 1.0
     assert oracle.audit_records[0]["executed_true_violation"] is False
+
+
+def test_on_time_service_distinguishes_backlog_clearance() -> None:
+    env = SupplyChainEnv(
+        create_reference_network(), demand_noise=0.0, service_accounting="fifo_on_time"
+    )
+    customer = env.network.node("C1")
+    customer.backlog = 30.0
+    customer.inventory = 40.0
+    demand, fulfilled, _ = env._demand_and_fulfilment()
+    assert demand == 47.0
+    assert fulfilled >= 40.0
+    assert env._current_demand_fulfilled == 10.0 + 22.0
+    assert customer.backlog == 15.0
+
+
+def test_component_ablations_and_action_order_campaign() -> None:
+    scenario = Scenario("normal", (), "baseline", "none")
+    normal, _ = run_campaign(
+        seeds=(0,), horizon=3, scenarios=[scenario], include_ablations=True
+    )
+    reversed_plan, _ = run_campaign(
+        seeds=(0,), horizon=3, scenarios=[scenario], action_order="reverse"
+    )
+    assert len(normal) == 24
+    assert len(reversed_plan) == 12
+    assert {"no_trust", "no_authority", "no_route_repair", "no_quantity_clipping"}.issubset(
+        set(normal["repair_mode"])
+    )
+    assert (normal["service_accounting"] == "fifo_on_time").all()
+    assert (reversed_plan["action_order"] == "reverse").all()
