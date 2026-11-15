@@ -53,10 +53,17 @@ class SupplyChainEnv:
         self.cumulative_demand = 0.0
         self.cumulative_fulfilled = 0.0
         self.history: list[StepResult] = []
+        self._disruptions_applied_for_step: int | None = None
 
     def _apply_disruptions(self) -> None:
         for disruption in self.disruptions:
             disruption.apply(self, self.step_index)
+
+    def begin_step(self) -> None:
+        """Apply step disruptions once before the decision policy observes the state."""
+        if self._disruptions_applied_for_step != self.step_index:
+            self._apply_disruptions()
+            self._disruptions_applied_for_step = self.step_index
 
     def observe(self) -> Observation:
         nodes: dict[str, dict[str, float | bool | str]] = {}
@@ -197,7 +204,7 @@ class SupplyChainEnv:
         assurance: AssurancePolicy | None = None,
     ) -> StepResult:
         assurance = assurance or RuntimeAssurance()
-        self._apply_disruptions()
+        self.begin_step()
         plan = self._normalize_plan(proposed)
         outcomes: list[AssuranceOutcome] = []
         transport_cost = 0.0
@@ -235,6 +242,7 @@ class SupplyChainEnv:
         horizon: int,
     ) -> list[StepResult]:
         for _ in range(horizon):
+            self.begin_step()
             plan = agent.act(self.observe(), self)
             self.step(plan, assurance)
         return self.history

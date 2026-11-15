@@ -149,9 +149,7 @@ class BenchmarkRunner:
                             trajectory_frames.append(trajectory)
         summary_frame = pd.DataFrame(summary_rows)
         trajectory_frame = (
-            pd.concat(trajectory_frames, ignore_index=True)
-            if trajectory_frames
-            else pd.DataFrame()
+            pd.concat(trajectory_frames, ignore_index=True) if trajectory_frames else pd.DataFrame()
         )
         return summary_frame, trajectory_frame
 
