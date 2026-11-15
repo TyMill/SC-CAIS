@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from sc_cais.disruptions import FalseInventorySignal
 from sc_cais.environment import SupplyChainEnv
-from sc_cais.models import ActionPlan
+from sc_cais.models import Action, ActionPlan, ActionType
 from sc_cais.network import create_reference_network
 from sc_cais.revision_experiments import EvidenceLimitedAssurance, run_campaign
 from sc_cais.scenarios import Scenario
@@ -55,3 +55,25 @@ def test_campaign_returns_audited_modes_without_modifying_frozen_outputs() -> No
     assert set(summary["repair_mode"]) == {"rule_repair", "reject_only", "quantity_clip"}
     assert summary["physical_command_violation_rate"].between(0.0, 1.0).all()
     assert actions["executed_true_violation"].isin([True, False]).all()
+
+
+def test_covert_high_trust_attack_exposes_observed_kernel_limit() -> None:
+    env = SupplyChainEnv(
+        create_reference_network(),
+        disruptions=(FalseInventorySignal("H1", 0, 1, 4.0, 0.8),),
+        demand_noise=0.0,
+    )
+    env.network.node("H1").inventory = 1.0
+    env.begin_step()
+    proposal = Action(ActionType.SHIP, "H1", "C1", 3.0)
+
+    observed = EvidenceLimitedAssurance(view="observed")
+    result = observed.decide(env, proposal)
+    assert result.executed_action.quantity == 3.0
+    assert observed.audit_records[0]["executed_true_violation"] is True
+    assert observed.audit_records[0]["executed_true_constraints"] == "inventory_nonnegative"
+
+    oracle = EvidenceLimitedAssurance(view="oracle")
+    result_oracle = oracle.decide(env, proposal)
+    assert result_oracle.executed_action.quantity <= 1.0
+    assert oracle.audit_records[0]["executed_true_violation"] is False
