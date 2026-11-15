@@ -106,3 +106,22 @@ def test_component_ablations_and_action_order_campaign() -> None:
     )
     assert (normal["service_accounting"] == "fifo_on_time").all()
     assert (reversed_plan["action_order"] == "reverse").all()
+
+
+def test_component_ablation_removes_threshold_from_repair_and_check() -> None:
+    env = SupplyChainEnv(create_reference_network(), demand_noise=0.0)
+    env.observation_trust_override["H1"] = 0.1
+    proposal = Action(ActionType.SHIP, "H1", "C1", 5.0)
+    full = EvidenceLimitedAssurance(view="observed", repair_mode="rule_repair")
+    no_trust = EvidenceLimitedAssurance(view="observed", repair_mode="no_trust")
+    full_decision = full.decide(env, proposal)
+    no_trust_decision = no_trust.decide(env, proposal)
+    assert full_decision.decision != no_trust_decision.decision
+    assert no_trust_decision.executed_action.source == "H1"
+    assert no_trust_decision.executed_action.target == "C1"
+
+    authority_only = Action(ActionType.SHIP, "S1", "P1", 46.0)
+    full2 = EvidenceLimitedAssurance(view="observed", repair_mode="rule_repair")
+    no_authority = EvidenceLimitedAssurance(view="observed", repair_mode="no_authority")
+    assert full2.decide(env, authority_only).executed_action.quantity <= 45.0
+    assert no_authority.decide(env, authority_only).executed_action.quantity == 46.0
