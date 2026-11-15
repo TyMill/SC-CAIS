@@ -98,8 +98,11 @@ class EvidenceLimitedAssurance:
                     )
                 else:
                     decision = AssuranceOutcome(
-                        proposed, Action.hold("quantity clipping failed"),
-                        AssuranceDecision.FALLBACK, original, []
+                        proposed,
+                        Action.hold("quantity clipping failed"),
+                        AssuranceDecision.FALLBACK,
+                        original,
+                        [],
                     )
         else:
             decision = self._kernel.decide(state, proposed)
@@ -141,8 +144,12 @@ class EvidenceLimitedAssurance:
 
 def revision_scenarios() -> list[Scenario]:
     names = {
-        "normal", "false_inventory", "telemetry_loss", "route_spoofing",
-        "compound", "cyber_physical",
+        "normal",
+        "false_inventory",
+        "telemetry_loss",
+        "route_spoofing",
+        "compound",
+        "cyber_physical",
     }
     selected = [scenario for scenario in default_scenarios() if scenario.name in names]
     selected.append(
@@ -172,7 +179,7 @@ def run_campaign(
     )
     summaries: list[dict[str, object]] = []
     actions: list[dict[str, object]] = []
-    for scenario in (scenarios if scenarios is not None else revision_scenarios()):
+    for scenario in scenarios if scenarios is not None else revision_scenarios():
         _, disruption_end = disruption_window(scenario)
         for seed in seeds:
             for policy_type in policies:
@@ -191,29 +198,44 @@ def run_campaign(
                     n = len(records)
                     metrics = summarize(results, disruption_end=disruption_end)
                     identity = {
-                        "scenario": scenario.name, "seed": seed, "policy": policy.name,
-                        "kernel_view": view, "repair_mode": repair_mode,
-                        "horizon": horizon, "n_actions": n,
+                        "scenario": scenario.name,
+                        "seed": seed,
+                        "policy": policy.name,
+                        "kernel_view": view,
+                        "repair_mode": repair_mode,
+                        "horizon": horizon,
+                        "n_actions": n,
                     }
-                    summaries.append({
-                        **identity, **metrics,
-                        "physical_command_violation_rate": (
-                            sum(bool(a["executed_true_violation"]) for a in records) / n
-                            if n else 0.0
-                        ),
-                        "proposed_physical_violation_rate": (
-                            sum(bool(a["proposed_true_violation"]) for a in records) / n
-                            if n else 0.0
-                        ),
-                        "mean_quantity_deviation": (
-                            sum(float(a["quantity_deviation"]) for a in records) / n
-                            if n else 0.0
-                        ),
-                        "route_change_rate": (
-                            sum(bool(a["source_changed"]) or bool(a["target_changed"])
-                                for a in records) / n if n else 0.0
-                        ),
-                    })
+                    summaries.append(
+                        {
+                            **identity,
+                            **metrics,
+                            "physical_command_violation_rate": (
+                                sum(bool(a["executed_true_violation"]) for a in records) / n
+                                if n
+                                else 0.0
+                            ),
+                            "proposed_physical_violation_rate": (
+                                sum(bool(a["proposed_true_violation"]) for a in records) / n
+                                if n
+                                else 0.0
+                            ),
+                            "mean_quantity_deviation": (
+                                sum(float(a["quantity_deviation"]) for a in records) / n
+                                if n
+                                else 0.0
+                            ),
+                            "route_change_rate": (
+                                sum(
+                                    bool(a["source_changed"]) or bool(a["target_changed"])
+                                    for a in records
+                                )
+                                / n
+                                if n
+                                else 0.0
+                            ),
+                        }
+                    )
                     actions.extend({**identity, **record} for record in records)
     summary_frame = pd.DataFrame(summaries)
     action_frame = pd.DataFrame(actions)

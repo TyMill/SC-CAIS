@@ -1,0 +1,2 @@
+[console_scripts]
+sc-cais = sc_cais.cli:app

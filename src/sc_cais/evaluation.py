@@ -63,8 +63,10 @@ def _recovery_metrics(
     loss_area = float(np.sum(loss))
     max_degradation = float(np.max(loss))
     first_degraded = np.flatnonzero(instant_service < recovery_threshold)
-    anchor = int(disruption_end) if disruption_end is not None else (
-        int(first_degraded[0]) if first_degraded.size else 0
+    anchor = (
+        int(disruption_end)
+        if disruption_end is not None
+        else (int(first_degraded[0]) if first_degraded.size else 0)
     )
     anchor = max(0, min(anchor, instant_service.size - 1))
     recovered_at: int | None = None
@@ -109,9 +111,7 @@ def summarize(
     instant_service = np.array([r.instant_service_level for r in results], dtype=float)
     backlog = np.array([r.total_backlog for r in results], dtype=float)
     latencies = (
-        np.array([o.latency_ms for o in outcomes], dtype=float)
-        if outcomes
-        else np.array([0.0])
+        np.array([o.latency_ms for o in outcomes], dtype=float) if outcomes else np.array([0.0])
     )
     n_actions = max(len(outcomes), 1)
     metrics = {

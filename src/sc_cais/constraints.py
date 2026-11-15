@@ -69,8 +69,7 @@ class RouteAvailabilityConstraint:
             )
         edge = env.network.edge(action.source, action.target)
         endpoints_operating = (
-            env.network.node(action.source).operating
-            and env.network.node(action.target).operating
+            env.network.node(action.source).operating and env.network.node(action.target).operating
         )
         if not edge.active or not endpoints_operating:
             return ConstraintViolation(

@@ -86,11 +86,14 @@ class RuntimeAssurance:
             key = f"{source}->{target}"
             if key not in observation.edges:
                 return False
-            return min(
-                float(observation.nodes[source]["trust"]),
-                float(observation.nodes[target]["trust"]),
-                float(observation.edges[key]["trust"]),
-            ) >= trust_threshold
+            return (
+                min(
+                    float(observation.nodes[source]["trust"]),
+                    float(observation.nodes[target]["trust"]),
+                    float(observation.edges[key]["trust"]),
+                )
+                >= trust_threshold
+            )
 
         route_bad = (
             not env.network.graph.has_edge(source_id, target_id)
