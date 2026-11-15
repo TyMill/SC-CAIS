@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from sc_cais.agents import AgenticHeuristicAgent
 from sc_cais.disruptions import FalseInventorySignal
 from sc_cais.environment import SupplyChainEnv
 from sc_cais.models import ActionPlan
