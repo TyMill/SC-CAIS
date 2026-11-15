@@ -47,4 +47,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: revision-smoke-results
-          path: |\n            outputs/revision_smoke/\n            outputs/revision_missing_smoke/
+          path: |
+            outputs/revision_smoke/
+            outputs/revision_missing_smoke/
