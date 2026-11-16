@@ -131,8 +131,14 @@ def test_all_assurance_modes_record_positive_wall_clock_latency() -> None:
     from sc_cais.models import Action, ActionType
 
     modes = (
-        "rule_repair", "monitor_only", "reject_only", "quantity_clip",
-        "no_trust", "no_authority", "no_route_repair", "no_quantity_clipping",
+        "rule_repair",
+        "monitor_only",
+        "reject_only",
+        "quantity_clip",
+        "no_trust",
+        "no_authority",
+        "no_route_repair",
+        "no_quantity_clipping",
     )
     env = SupplyChainEnv(create_reference_network(), demand_noise=0.0)
     proposal = Action(ActionType.SHIP, "H1", "C1", 8.0)
