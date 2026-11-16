@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from time import perf_counter_ns
 from typing import Literal
 
 import pandas as pd
@@ -100,6 +101,9 @@ class EvidenceLimitedAssurance:
         return replace(proposed, quantity=cap)
 
     def decide(self, env: SupplyChainEnv, proposed: Action) -> AssuranceOutcome:
+        # Include observation snapshot and reconstruction, exclude policy inference
+        # and the independent offline true-state audit from the timed interval.
+        assurance_start_ns = perf_counter_ns()
         # The restricted kernel is passed only a reconstructed state made from
         # the snapshot. It cannot reach env.network or the true shipment ledger.
         state = env if self.view == "oracle" else from_observation(env.observe())
@@ -163,6 +167,9 @@ class EvidenceLimitedAssurance:
             else:
                 decision = self._kernel.decide(state, proposed)
 
+        # Stop timing before independently auditing the action against ground truth.
+        decision.latency_ms = (perf_counter_ns() - assurance_start_ns) / 1_000_000.0
+
         def physical_violations(action: Action) -> list[str]:
             # Invalid identifiers must not be forwarded to state-dependent checks.
             invalid = PHYSICAL_CONSTRAINTS[0].check(env, action)
@@ -181,6 +188,7 @@ class EvidenceLimitedAssurance:
             {
                 "step": env.step_index,
                 "decision": str(decision.decision),
+                "assurance_latency_ms": decision.latency_ms,
                 "proposed_true_violation": bool(proposed_true),
                 "executed_true_violation": bool(executed_true),
                 "proposed_true_constraints": ";".join(proposed_true),
