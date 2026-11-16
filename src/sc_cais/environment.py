@@ -34,6 +34,7 @@ class SupplyChainEnv:
         disruptions: Iterable[Disruption] = (),
         demand_noise: float = 0.08,
         observation_noise: float = 0.0,
+        service_accounting: str = "legacy",
     ) -> None:
         self.network = network.clone()
         self.seed = seed
@@ -41,6 +42,10 @@ class SupplyChainEnv:
         self.disruptions = list(disruptions)
         self.demand_noise = demand_noise
         self.observation_noise = max(0.0, observation_noise)
+        if service_accounting not in {"legacy", "fifo_on_time"}:
+            raise ValueError("service_accounting must be legacy or fifo_on_time")
+        self.service_accounting = service_accounting
+        self._current_demand_fulfilled = 0.0
         self.step_index = 0
         self.shipments: list[Shipment] = []
         self.demand_multipliers: dict[str, float] = {}
@@ -175,6 +180,7 @@ class SupplyChainEnv:
     def _demand_and_fulfilment(self) -> tuple[float, float, float]:
         total_demand = 0.0
         total_fulfilled = 0.0
+        current_demand_fulfilled = 0.0
         backlog_cost = 0.0
         for node in self.network.nodes():
             if node.baseline_demand <= 0:
@@ -182,13 +188,19 @@ class SupplyChainEnv:
             multiplier = self.demand_multipliers.get(node.node_id, 1.0)
             noise = max(0.0, 1.0 + float(self.rng.normal(0, self.demand_noise)))
             demand = node.baseline_demand * multiplier * noise
-            requested = demand + node.backlog
+            previous_backlog = node.backlog
+            requested = demand + previous_backlog
             fulfilled = min(node.inventory, requested)
+            # FIFO: outstanding orders take priority. Late fulfilment counts as
+            # backlog recovery, not as on-time service of newly arrived demand.
+            cleared_backlog = min(previous_backlog, fulfilled)
+            current_demand_fulfilled += min(demand, max(0.0, fulfilled - cleared_backlog))
             node.inventory -= fulfilled
             node.backlog = requested - fulfilled
             total_demand += demand
             total_fulfilled += fulfilled
             backlog_cost += node.backlog * node.backlog_cost
+        self._current_demand_fulfilled = current_demand_fulfilled
         return total_demand, total_fulfilled, backlog_cost
 
     def _holding_cost(self) -> float:
@@ -225,7 +237,16 @@ class SupplyChainEnv:
             demand=demand,
             fulfilled=fulfilled,
             service_level=self.service_level,
-            instant_service_level=min(1.0, fulfilled / max(demand, 1e-12)),
+            instant_service_level=min(
+                1.0,
+                (
+                    self._current_demand_fulfilled
+                    if self.service_accounting == "fifo_on_time"
+                    else fulfilled
+                )
+                / max(demand, 1e-12),
+            ),
+            current_demand_fulfilled=self._current_demand_fulfilled,
             total_backlog=sum(n.backlog for n in self.network.nodes()),
             step_cost=step_cost,
             cumulative_cost=self.cumulative_cost,

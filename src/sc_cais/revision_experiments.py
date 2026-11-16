@@ -9,15 +9,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from time import perf_counter_ns
 from typing import Literal
 
 import pandas as pd
 
 from sc_cais.agents import AgenticHeuristicAgent, RollingHorizonMILPAgent, RuleBasedAgent
-from sc_cais.assurance import RuntimeAssurance
+from sc_cais.assurance import PassthroughAssurance, RuntimeAssurance
 from sc_cais.constraints import (
     AuthorityConstraint,
     CapacityConstraint,
+    DataTrustConstraint,
     InventoryConstraint,
     RouteAvailabilityConstraint,
     ValidActionConstraint,
@@ -31,7 +33,16 @@ from sc_cais.scenarios import Scenario, default_scenarios, disruption_window
 from sc_cais.visibility import from_observation
 
 KernelView = Literal["oracle", "observed"]
-RepairMode = Literal["rule_repair", "reject_only", "quantity_clip"]
+RepairMode = Literal[
+    "rule_repair",
+    "monitor_only",
+    "reject_only",
+    "quantity_clip",
+    "no_trust",
+    "no_authority",
+    "no_route_repair",
+    "no_quantity_clipping",
+]
 
 # This independent evaluator has privileged state access *only for evaluation*.
 # The kernel's trust check is not counted as a physical violation: reported
@@ -53,7 +64,16 @@ class EvidenceLimitedAssurance:
     _kernel: RuntimeAssurance = field(init=False)
 
     def __post_init__(self) -> None:
-        self._kernel = RuntimeAssurance(repair_enabled=self.repair_mode != "reject_only")
+        from sc_cais.constraints import default_constraints
+
+        constraints = default_constraints()
+        if self.repair_mode == "no_trust":
+            constraints = [c for c in constraints if not isinstance(c, DataTrustConstraint)]
+        if self.repair_mode == "no_authority":
+            constraints = [c for c in constraints if not isinstance(c, AuthorityConstraint)]
+        self._kernel = RuntimeAssurance(
+            constraints=constraints, repair_enabled=self.repair_mode != "reject_only"
+        )
 
     def _quantity_clip(self, state: object, proposed: Action) -> Action | None:
         """Simple feasible-clipping comparator; no route/source substitution."""
@@ -81,10 +101,15 @@ class EvidenceLimitedAssurance:
         return replace(proposed, quantity=cap)
 
     def decide(self, env: SupplyChainEnv, proposed: Action) -> AssuranceOutcome:
+        # Include observation snapshot and reconstruction, exclude policy inference
+        # and the independent offline true-state audit from the timed interval.
+        assurance_start_ns = perf_counter_ns()
         # The restricted kernel is passed only a reconstructed state made from
         # the snapshot. It cannot reach env.network or the true shipment ledger.
         state = env if self.view == "oracle" else from_observation(env.observe())
-        if self.repair_mode == "quantity_clip":
+        if self.repair_mode == "monitor_only":
+            decision = PassthroughAssurance(self._kernel.constraints).decide(state, proposed)
+        elif self.repair_mode == "quantity_clip":
             from sc_cais.models import AssuranceDecision
 
             original = self._kernel._violations(state, proposed)
@@ -105,7 +130,45 @@ class EvidenceLimitedAssurance:
                         [],
                     )
         else:
-            decision = self._kernel.decide(state, proposed)
+            # Component ablations preserve the complete independent physical auditor.
+            # The restricted strategies must not silently fall back to unrestricted repair.
+            if self.repair_mode in {"no_route_repair", "no_quantity_clipping"}:
+                from sc_cais.models import AssuranceDecision
+
+                original = self._kernel._violations(state, proposed)
+                if not original:
+                    decision = AssuranceOutcome(
+                        proposed, proposed, AssuranceDecision.APPROVE, [], []
+                    )
+                else:
+                    candidate = self._kernel._repair(state, proposed)
+                    if candidate is not None:
+                        if self.repair_mode == "no_route_repair" and (
+                            candidate.source != proposed.source
+                            or candidate.target != proposed.target
+                        ):
+                            candidate = None
+                        if self.repair_mode == "no_quantity_clipping" and (
+                            candidate is not None and candidate.quantity < proposed.quantity - 1e-9
+                        ):
+                            candidate = None
+                    if candidate is not None and not self._kernel._violations(state, candidate):
+                        decision = AssuranceOutcome(
+                            proposed, candidate, AssuranceDecision.REPAIR, original, []
+                        )
+                    else:
+                        decision = AssuranceOutcome(
+                            proposed,
+                            Action.hold("component ablation fallback"),
+                            AssuranceDecision.FALLBACK,
+                            original,
+                            [],
+                        )
+            else:
+                decision = self._kernel.decide(state, proposed)
+
+        # Stop timing before independently auditing the action against ground truth.
+        decision.latency_ms = (perf_counter_ns() - assurance_start_ns) / 1_000_000.0
 
         def physical_violations(action: Action) -> list[str]:
             # Invalid identifiers must not be forwarded to state-dependent checks.
@@ -125,6 +188,7 @@ class EvidenceLimitedAssurance:
             {
                 "step": env.step_index,
                 "decision": str(decision.decision),
+                "assurance_latency_ms": decision.latency_ms,
                 "proposed_true_violation": bool(proposed_true),
                 "executed_true_violation": bool(executed_true),
                 "proposed_true_constraints": ";".join(proposed_true),
@@ -169,6 +233,9 @@ def run_campaign(
     horizon: int = 20,
     scenarios: list[Scenario] | None = None,
     output_dir: str | Path | None = None,
+    include_ablations: bool = False,
+    action_order: Literal["native", "reverse"] = "native",
+    modes_override: tuple[tuple[KernelView, RepairMode], ...] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     policies = (RuleBasedAgent, RollingHorizonMILPAgent, AgenticHeuristicAgent)
     modes: tuple[tuple[KernelView, RepairMode], ...] = (
@@ -177,6 +244,17 @@ def run_campaign(
         ("observed", "reject_only"),
         ("observed", "quantity_clip"),
     )
+    if include_ablations:
+        modes += (
+            ("observed", "no_trust"),
+            ("observed", "no_authority"),
+            ("observed", "no_route_repair"),
+            ("observed", "no_quantity_clipping"),
+        )
+    if modes_override is not None:
+        if not modes_override:
+            raise ValueError("modes_override must include at least one assurance mode")
+        modes = modes_override
     summaries: list[dict[str, object]] = []
     actions: list[dict[str, object]] = []
     for scenario in scenarios if scenarios is not None else revision_scenarios():
@@ -190,10 +268,19 @@ def run_campaign(
                         disruptions=scenario.disruptions,
                         demand_noise=0.08,
                         observation_noise=0.0,
+                        service_accounting="fifo_on_time",
                     )
                     policy = policy_type()
                     assurance = EvidenceLimitedAssurance(view=view, repair_mode=repair_mode)
-                    results = env.run(policy, assurance, horizon)
+                    if action_order == "native":
+                        results = env.run(policy, assurance, horizon)
+                    else:
+                        results = []
+                        for _ in range(horizon):
+                            env.begin_step()
+                            plan = policy.act(env.observe(), env)
+                            plan.actions.reverse()
+                            results.append(env.step(plan, assurance))
                     records = assurance.audit_records
                     n = len(records)
                     metrics = summarize(results, disruption_end=disruption_end)
@@ -204,6 +291,8 @@ def run_campaign(
                         "kernel_view": view,
                         "repair_mode": repair_mode,
                         "horizon": horizon,
+                        "action_order": action_order,
+                        "service_accounting": "fifo_on_time",
                         "n_actions": n,
                     }
                     summaries.append(

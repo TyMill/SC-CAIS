@@ -40,9 +40,16 @@ jobs:
       - name: Revision quick smoke campaign
         run: |
           python -c "from sc_cais.revision_experiments import run_campaign; from sc_cais.scenarios import Scenario; s,a=run_campaign(seeds=(0,),horizon=3,scenarios=[Scenario('normal',(), 'baseline','none')],output_dir='outputs/revision_smoke'); print(len(s),len(a)); assert len(s)==12"
+      - name: Missing-control campaign quick verification
+        run: python examples/revision_missing_controls.py --quick --output outputs/revision_missing_smoke
+      - name: Latency protocol quick verification
+        run: python examples/revision_latency_campaign.py --quick --output outputs/revision_latency_smoke
       - name: Archive smoke outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: revision-smoke-results
-          path: outputs/revision_smoke/
+          path: |
+            outputs/revision_smoke/
+            outputs/revision_missing_smoke/
+            outputs/revision_latency_smoke/
