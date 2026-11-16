@@ -125,3 +125,20 @@ def test_component_ablation_removes_threshold_from_repair_and_check() -> None:
     no_authority = EvidenceLimitedAssurance(view="observed", repair_mode="no_authority")
     assert full2.decide(env, authority_only).executed_action.quantity <= 45.0
     assert no_authority.decide(env, authority_only).executed_action.quantity == 46.0
+
+
+def test_all_assurance_modes_record_positive_wall_clock_latency() -> None:
+    from sc_cais.models import Action, ActionType
+
+    modes = (
+        "rule_repair", "monitor_only", "reject_only", "quantity_clip",
+        "no_trust", "no_authority", "no_route_repair", "no_quantity_clipping",
+    )
+    env = SupplyChainEnv(create_reference_network(), demand_noise=0.0)
+    proposal = Action(ActionType.SHIP, "H1", "C1", 8.0)
+    for mode in modes:
+        checker = EvidenceLimitedAssurance(view="observed", repair_mode=mode)
+        outcome = checker.decide(env, proposal)
+        assert outcome.latency_ms > 0.0, mode
+        assert len(checker.audit_records) == 1
+        assert checker.audit_records[0]["assurance_latency_ms"] == outcome.latency_ms
