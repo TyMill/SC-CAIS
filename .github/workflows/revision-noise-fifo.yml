@@ -1,0 +1,36 @@
+name: SC-CAIS observed-noise FIFO validation
+
+on:
+  push:
+    branches:
+      - 'revision/metrics-ablations-order-20261115'
+    paths:
+      - 'examples/revision_noise_fifo_campaign.py'
+      - '.github/workflows/revision-noise-fifo.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  noise-fifo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -e '.[dev]'
+      - name: Run quick protocol smoke
+        run: python examples/revision_noise_fifo_campaign.py --quick --output outputs/revision_noise_fifo_quick
+      - name: Run complete matched campaign
+        run: python examples/revision_noise_fifo_campaign.py --output outputs/revision_noise_fifo
+      - name: Archive complete reproducible evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: revised-fifo-noise-trajectory-evidence
+          path: outputs/revision_noise_fifo/
